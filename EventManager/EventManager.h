@@ -55,9 +55,6 @@ class EventManager
 
 public:
     
-    // Type for an event listener (a.k.a. callback) function
-    typedef void ( *EventListener )( int eventCode, int eventParam );
-    
     // EventManager can be instantiated in either as interrupt safe or 
     // non-interupt safe configuration.  The default is interrupt safe, but 
     // these constants can be used to explicitly set the configuration.

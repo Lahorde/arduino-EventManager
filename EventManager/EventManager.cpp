@@ -98,14 +98,6 @@ int EventManager::processEvent()
         EVTMGR_DEBUG_PRINT( " sent to " )
         EVTMGR_DEBUG_PRINTLN( handledCount )
     }
-    
-    // event manager tick
-    if(mListeners.hasActiveListeners(EVENT_TICK))
-    {
-    	/** some listeners listen on event tick - continue notification */
-    	queueEvent(EVENT_TICK, EventManager::kLowPriority);
-    }
-
     return handledCount;
 }
 
@@ -123,7 +115,7 @@ void EventManager::wait(unsigned long ms)
 
 	if(ms == 0)
 	{
-		EVTMGR_ERROR_PRINT(F("0 duration given for delay\n"));
+		EVTMGR_DEBUG_PRINT(F("0 duration given for delay\n"));
 		return;
 	}
 
@@ -135,9 +127,18 @@ void EventManager::wait(unsigned long ms)
 		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
 		if(loc_u16_temp_time > loc_u16_warn_duration)
 		{
-			LOG_DEBUG(F("long processing %uµs\n"), loc_u16_temp_time);
+			EVTMGR_DEBUG_PRINT(F("long processing %uµs\n"));
+			EVTMGR_DEBUG_PRINTLN(loc_u16_temp_time);
 		}
 		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
+
+		/** send tick event */
+	    // event manager tick
+	    if(getInstance()->mListeners.hasActiveListeners(EVENT_TICK))
+	    {
+	    	/** some listeners listen on event tick - continue notification */
+	    	getInstance()->mListeners.sendEvent( EVENT_TICK, 0 );
+	    }
 
 		if(loc_u16_temp_time > loc_u16_wait_duration)
 		{
@@ -182,14 +183,6 @@ int EventManager::processAllEvents()
         EVTMGR_DEBUG_PRINT( " sent to " )
         EVTMGR_DEBUG_PRINTLN( handledCount )
     }
-    
-    // event manager tick
-    if(mListeners.hasActiveListeners(EVENT_TICK))
-    {
-    	/** some listeners listen on event tick - continue notification */
-    	queueEvent(EVENT_TICK, EventManager::kLowPriority);
-    }
-
     return handledCount;
 }
 
@@ -215,7 +208,7 @@ boolean EventManager::ListenerList::addListener( byte eventCode, EventListener* 
     // Argument check
     if ( !listener ) 
     {
-    	EVTMGR_ERROR_PRINT(F("invalid listener given\n"));
+    	EVTMGR_DEBUG_PRINTLN(F("invalid listener given"));
         return false;
     }
 
