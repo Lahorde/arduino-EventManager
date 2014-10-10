@@ -34,6 +34,7 @@
 
 #include "EventManager.h"
 #include <util/atomic.h>
+#include <memory_watcher.h>
 
 
 #if EVENTMANAGER_DEBUG
@@ -130,10 +131,11 @@ void EventManager::wait(unsigned long ms)
 			EVTMGR_DEBUG_PRINT(F("long processing %uµs\n"));
 			EVTMGR_DEBUG_PRINTLN(loc_u16_temp_time);
 		}
+
+		MemoryWatcher::checkRAMHistory();
 		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
 
 		/** send tick event */
-	    // event manager tick
 	    if(getInstance()->mListeners.hasActiveListeners(EVENT_TICK))
 	    {
 	    	/** some listeners listen on event tick - continue notification */

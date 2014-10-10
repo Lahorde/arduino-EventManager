@@ -142,7 +142,7 @@ public:
      * This event must have been defined in your applications
      * events.h
      */
-    static const int EVENT_TICK = -1;
+    static const byte EVENT_TICK = -1;
 
     //Singleton design pattern
     // Return EventManagerInstance, it operates in interrupt safe mode
