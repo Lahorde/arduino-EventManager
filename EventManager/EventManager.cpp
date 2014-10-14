@@ -133,6 +133,8 @@ void EventManager::wait(unsigned long ms)
 		}
 
 		MemoryWatcher::checkRAMHistory();
+		/** paint stack in case of free / malloc */
+		MemoryWatcher::paintStackNow();
 		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
 
 		/** send tick event */
