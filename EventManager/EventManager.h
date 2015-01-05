@@ -207,11 +207,12 @@ public:
     int processAllEvents();
 
     /**
-     * Active wait - must be called in order to process events during an active wait
+     * Application tick - must be called to schedule application
+     * after given duration
      * @param ms
      * @return
      */
-    static void wait(unsigned long ms);
+    static void applicationTick(unsigned long ms);
 
 private:  
     

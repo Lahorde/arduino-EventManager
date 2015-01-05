@@ -107,7 +107,7 @@ int EventManager::processEvent()
  * TODO handle microsec
  * @param ms
  */
-void EventManager::wait(unsigned long ms)
+void EventManager::applicationTick(unsigned long ms)
 {
 	unsigned int  loc_u16_temp_time, loc_u16_temp_sauv = 0;
 	unsigned long loc_u32_curr_count = 0;
@@ -486,6 +486,13 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     }
 #endif
 
+    boolean retVal = false;
+    if(!getInstance()->mListeners.hasActiveListeners(eventCode))
+    {
+    	/** Do not push an event without any listeners */
+    	return retVal;
+    }
+
     uint8_t sregSave = 0;
     if ( mInterruptSafeMode )
     {
@@ -496,7 +503,6 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     }
 
     // ATOMIC BLOCK BEGIN (only atomic **if** mInterruptSafeMode is on)
-    boolean retVal = false;
     if ( !isFull() ) 
     {
         // Store the event at the tail of the queue
@@ -514,6 +520,7 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     else
     {
     	// queue is full
+    	Serial.println("queue full");
     }
     // ATOMIC BLOCK END
 
