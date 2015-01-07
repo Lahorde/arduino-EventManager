@@ -519,8 +519,7 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     }
     else
     {
-    	// queue is full
-    	Serial.println("queue full");
+
     }
     // ATOMIC BLOCK END
 
