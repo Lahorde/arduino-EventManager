@@ -15,13 +15,15 @@
 #ifndef EVENTLISTENER_H_
 #define EVENTLISTENER_H_
 
+#include <stdint.h>
+
 /**
  * Event listener interface
  */
 class EventListener
 {
 public:
-	virtual void processEvent(int eventCode, int eventParam) = 0;
+	virtual void processEvent(uint8_t eventCode, int eventParam) = 0;
 	virtual ~EventListener(){};
 };
 
