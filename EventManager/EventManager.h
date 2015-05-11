@@ -198,8 +198,15 @@ public:
     // queue if full and the event cannot be inserted
     boolean queueEvent( byte eventCode, int eventParam, EventPriority pri = kLowPriority );
 
+    // process synchronously given event. As even is processed synchronously
+    // it isn't pushed in events queue. It is priority over all events in events
+    // queues (no more priority events are searched in events queue in order to be processed
+    // synchronously before given event).
+    int processEvent(byte eventCode, int eventParam);
+
+    // process most priority event in events queues
     // this must be called regularly (usually by calling it inside the loop() function)
-    int processEvent();
+    int processEvent(void);
 
     // this function can be called to process ALL events in the queue
     // WARNING:  if interrupts are adding events as fast as they are being processed
@@ -407,7 +414,6 @@ inline boolean EventManager::queueEvent( byte eventCode, int eventParam, EventPr
     return ( pri == kHighPriority ) ? 
         mHighPriorityQueue.queueEvent( eventCode, eventParam ) : mLowPriorityQueue.queueEvent( eventCode, eventParam ); 
 }
-
 
 
 

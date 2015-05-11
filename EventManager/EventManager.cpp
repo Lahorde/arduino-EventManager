@@ -68,7 +68,7 @@ mLowPriorityQueue( ( safety == EventManager::kInterruptSafe ) )
 }
 
 
-int EventManager::processEvent() 
+int EventManager::processEvent(void)
 {
     byte eventCode;
     int param;
@@ -100,6 +100,20 @@ int EventManager::processEvent()
         EVTMGR_DEBUG_PRINTLN( handledCount )
     }
     return handledCount;
+}
+
+int EventManager::processEvent(byte eventCode, int eventParam)
+{
+    int handledCount = mListeners.sendEvent( eventCode, eventParam );
+
+    EVTMGR_DEBUG_PRINT( "processEvent() hi-pri event " )
+    EVTMGR_DEBUG_PRINT( eventCode )
+    EVTMGR_DEBUG_PRINT( ", " )
+    EVTMGR_DEBUG_PRINT( param )
+    EVTMGR_DEBUG_PRINT( " sent to " )
+    EVTMGR_DEBUG_PRINTLN( handledCount )
+
+	return handledCount;
 }
 
 /**
