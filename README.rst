@@ -1,13 +1,13 @@
 ====================
-Arduino EventManager
+CPP EventManager
 ====================
 
-Using an event-driven design is a common way to code Arduino projects that
+Using an event-driven design is a common way to code projects that
 interact with the environment around them.  **EventManager** is 
-a single C++ class that provides an event handling system for Arduino.  With
+a single C++ class that provides an event handling system.  With
 **EventManager** you can register functions that "listen" 
 for particular events and when things happen you can "post" events to
-**EventManager**.  You then use the loop() function to regularly tell
+**EventManager**.  You then use a loop() function to regularly tell
 **EventManager** to process  events and the appropriate listeners will be
 called. 
 
@@ -26,15 +26,12 @@ the listener list are both small (although you can make them bigger if needed).
 Installation
 ------------
 
-Copy the folder `EventManager` into your Arduino `Libraries` folder, as
-described in the `Arduino documentation <http://arduino.cc/en/Guide/Libraries>`_.
-
 Usage
 -----
 
 At the top of your sketch you must include the **EventManager** header file::
 
-    #include <EventManager.h>
+    #include <event_manager.h>
     
 And then at global scope you should instantiate an **EventManager** object::
 

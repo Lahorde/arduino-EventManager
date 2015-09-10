@@ -33,8 +33,10 @@
 
 
 #include "EventManager.h"
-#include <util/atomic.h>
-#include <memory_watcher.h>
+#include <cstdio>
+#include <ctime>
+#include <chrono>
+#include <unistd.h>
 
 
 #if EVENTMANAGER_DEBUG
@@ -61,16 +63,16 @@ EventManager* EventManager::getInstance()
 }
 
 
-EventManager::EventManager( SafetyMode safety ) : 
-mHighPriorityQueue( ( safety == EventManager::kInterruptSafe ) ), 
-mLowPriorityQueue( ( safety == EventManager::kInterruptSafe ) )
+EventManager::EventManager() :
+mHighPriorityQueue(),
+mLowPriorityQueue()
 {
 }
 
 
-int EventManager::processEvent(void)
+int EventManager::processEvent() 
 {
-    byte eventCode;
+    uint8_t eventCode;
     int param;
     int handledCount = 0;
 
@@ -102,20 +104,6 @@ int EventManager::processEvent(void)
     return handledCount;
 }
 
-int EventManager::processEvent(byte eventCode, int eventParam)
-{
-    int handledCount = mListeners.sendEvent( eventCode, eventParam );
-
-    EVTMGR_DEBUG_PRINT( "processEvent() hi-pri event " )
-    EVTMGR_DEBUG_PRINT( eventCode )
-    EVTMGR_DEBUG_PRINT( ", " )
-    EVTMGR_DEBUG_PRINT( param )
-    EVTMGR_DEBUG_PRINT( " sent to " )
-    EVTMGR_DEBUG_PRINTLN( handledCount )
-
-	return handledCount;
-}
-
 /**
  * Not extremely precise
  * TODO handle microsec
@@ -123,7 +111,7 @@ int EventManager::processEvent(byte eventCode, int eventParam)
  */
 void EventManager::applicationTick(unsigned long ms)
 {
-	unsigned int  loc_u16_temp_time, loc_u16_temp_sauv = 0;
+	long long  loc_u64_temp_time = 0;
 	unsigned long loc_u32_curr_count = 0;
 	static const uint16_t loc_u16_warn_duration = 2000;
 	static const uint16_t loc_u16_wait_duration = loc_u16_warn_duration + 8000;
@@ -135,21 +123,18 @@ void EventManager::applicationTick(unsigned long ms)
 	}
 
 	while (loc_u32_curr_count < ms) {
-		loc_u16_temp_sauv = (uint16_t)micros();
+		auto loc_u16_temp_sauv = std::chrono::high_resolution_clock::now();
 		getInstance()->processEvent();
 
-		/** Overflow in case of very long task duration > 2^16 -1 */
-		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
-		if(loc_u16_temp_time > loc_u16_warn_duration)
+	    auto now   = std::chrono::high_resolution_clock::now();
+		loc_u64_temp_time = std::chrono::duration_cast<std::chrono::microseconds>(now - loc_u16_temp_sauv).count();
+		if(loc_u64_temp_time > loc_u16_warn_duration)
 		{
 			EVTMGR_DEBUG_PRINT(F("long processing %uµs\n"));
 			EVTMGR_DEBUG_PRINTLN(loc_u16_temp_time);
 		}
 
-		MemoryWatcher::checkRAMHistory();
-		/** paint stack in case of free / malloc */
-		MemoryWatcher::paintStackNow();
-		loc_u16_temp_time = (uint16_t)micros() -  loc_u16_temp_sauv;
+		loc_u64_temp_time = std::chrono::duration_cast<std::chrono::microseconds>(now - loc_u16_temp_sauv).count();
 
 		/** send tick event */
 	    if(getInstance()->mListeners.hasActiveListeners(EVENT_TICK))
@@ -158,15 +143,15 @@ void EventManager::applicationTick(unsigned long ms)
 	    	getInstance()->mListeners.sendEvent( EVENT_TICK, 0 );
 	    }
 
-		if(loc_u16_temp_time > loc_u16_wait_duration)
+		if(loc_u64_temp_time > loc_u16_wait_duration)
 		{
 			/** Continue iteration without waiting */
-			loc_u32_curr_count += loc_u16_temp_time/1000;
+			loc_u32_curr_count += loc_u64_temp_time/1000;
 		}
 		else
 		{
 			/** TODO for now delay - to be changed - decisive for low power modes */
-			delay((loc_u16_wait_duration - loc_u16_temp_time)/1000);
+			usleep(loc_u16_wait_duration - loc_u64_temp_time);
 			loc_u32_curr_count += loc_u16_wait_duration/1000;
 		}
 	}
@@ -174,7 +159,7 @@ void EventManager::applicationTick(unsigned long ms)
 
 int EventManager::processAllEvents() 
 {
-    byte eventCode;
+    uint8_t eventCode;
     int param;
     int handledCount = 0;
 
@@ -216,7 +201,7 @@ mNumListeners( 0 )
 }
 
 
-boolean EventManager::ListenerList::addListener( byte eventCode, EventListener* const listener )
+bool EventManager::ListenerList::addListener( uint8_t eventCode, EventListener* const listener )
 {
     EVTMGR_DEBUG_PRINT( "addListener() enter " )
     EVTMGR_DEBUG_PRINT( eventCode )
@@ -248,7 +233,7 @@ boolean EventManager::ListenerList::addListener( byte eventCode, EventListener* 
 }
 
 
-boolean EventManager::ListenerList::removeListener( byte eventCode, EventListener* const listener )
+bool EventManager::ListenerList::removeListener( uint8_t eventCode, EventListener* const listener )
 {
     EVTMGR_DEBUG_PRINT( "removeListener() enter " )
     EVTMGR_DEBUG_PRINT( eventCode )
@@ -313,7 +298,7 @@ int EventManager::ListenerList::removeListener( EventListener* const listener )
 }
 
 
-boolean EventManager::ListenerList::enableListener( byte eventCode, EventListener* const listener, boolean enable )
+bool EventManager::ListenerList::enableListener( uint8_t eventCode, EventListener* const listener, bool enable )
 {
     EVTMGR_DEBUG_PRINT( "enableListener() enter " )
     EVTMGR_DEBUG_PRINT( eventCode )
@@ -342,7 +327,7 @@ boolean EventManager::ListenerList::enableListener( byte eventCode, EventListene
 }
 
 
-boolean EventManager::ListenerList::isListenerEnabled( byte eventCode, EventListener* const listener )
+bool EventManager::ListenerList::isListenerEnabled( uint8_t eventCode, EventListener* const listener )
 {
     if ( mNumListeners == 0 ) 
     {
@@ -359,7 +344,7 @@ boolean EventManager::ListenerList::isListenerEnabled( byte eventCode, EventList
 }
 
 
-int EventManager::ListenerList::sendEvent( byte eventCode, int param )
+int EventManager::ListenerList::sendEvent( uint8_t eventCode, int param )
 {
     EVTMGR_DEBUG_PRINT( "sendEvent() enter " )
     EVTMGR_DEBUG_PRINT( eventCode )
@@ -387,7 +372,7 @@ int EventManager::ListenerList::sendEvent( byte eventCode, int param )
     return handlerCount;
 }
 
-bool EventManager::ListenerList::hasActiveListeners( byte eventCode )
+bool EventManager::ListenerList::hasActiveListeners( uint8_t eventCode )
 {
     for ( int i = 0; i < mNumListeners; i++ )
     {
@@ -400,7 +385,7 @@ bool EventManager::ListenerList::hasActiveListeners( byte eventCode )
     return false;
 }
 
-int EventManager::ListenerList::searchListeners( byte eventCode, EventListener* const listener )
+int EventManager::ListenerList::searchListeners( uint8_t eventCode, EventListener* const listener )
 {
     for ( int i = 0; i < mNumListeners; i++ ) 
     {
@@ -428,7 +413,7 @@ int EventManager::ListenerList::searchListeners( EventListener* const listener )
 }
 
 
-int EventManager::ListenerList::searchEventCode( byte eventCode )
+int EventManager::ListenerList::searchEventCode( uint8_t eventCode )
 {
     for ( int i = 0; i < mNumListeners; i++ ) 
     {
@@ -448,11 +433,10 @@ int EventManager::ListenerList::searchEventCode( byte eventCode )
 
 
 
-EventManager::EventQueue::EventQueue( boolean beSafe ) :
+EventManager::EventQueue::EventQueue( void ) :
 mEventQueueHead( 0 ), 
 mEventQueueTail( 0 ), 
-mNumEvents( 0 ), 
-mInterruptSafeMode( beSafe )
+mNumEvents( 0 )
 {
     for ( int i = 0; i < kEventQueueSize; i++ ) 
     {
@@ -463,7 +447,7 @@ mInterruptSafeMode( beSafe )
 
 
 
-boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
+bool EventManager::EventQueue::queueEvent( uint8_t eventCode, int eventParam )
 {  
     /*
     * The call to noInterrupts() MUST come BEFORE the full queue check.  
@@ -500,20 +484,11 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     }
 #endif
 
-    boolean retVal = false;
+    bool retVal = false;
     if(!getInstance()->mListeners.hasActiveListeners(eventCode))
     {
     	/** Do not push an event without any listeners */
     	return retVal;
-    }
-
-    uint8_t sregSave = 0;
-    if ( mInterruptSafeMode )
-    {
-        // Set up the atomic section by saving SREG and turning off interrupts
-        // (because we might or might not be called inside an interrupt handler)
-        sregSave = SREG;
-        cli();
     }
 
     // ATOMIC BLOCK BEGIN (only atomic **if** mInterruptSafeMode is on)
@@ -535,13 +510,7 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
     {
 
     }
-    // ATOMIC BLOCK END
 
-    if ( mInterruptSafeMode )
-    {   
-        // Restore previous state of interrupts 
-    	SREG = sregSave;
-    }
 
 #if EVENTMANAGER_DEBUG
     if ( !mInterruptSafeMode )
@@ -555,7 +524,7 @@ boolean EventManager::EventQueue::queueEvent( byte eventCode, int eventParam )
 }
 
 
-boolean EventManager::EventQueue::popEvent( byte* eventCode, int* eventParam )
+bool EventManager::EventQueue::popEvent( uint8_t* eventCode, int* eventParam )
 {
     /*
     * The call to noInterrupts() MUST come AFTER the empty queue check.  
@@ -580,12 +549,6 @@ boolean EventManager::EventQueue::popEvent( byte* eventCode, int* eventParam )
     {
         return false;
     }
-    
-    if ( mInterruptSafeMode )
-    {
-        EVTMGR_DEBUG_PRINTLN( "popEvent() interrupts off" )
-        cli();
-    }
 
     // Pop the event from the head of the queue
     // Store event code and event parameter into the user-supplied variables
@@ -601,13 +564,6 @@ boolean EventManager::EventQueue::popEvent( byte* eventCode, int* eventParam )
     // Update number of events in queue
     mNumEvents--;
 
-    if ( mInterruptSafeMode )
-    {
-        // This function is NOT designed to called from interrupt handlers, so
-        // it is safe to turn interrupts on instead of restoring a previous state.
-        sei();
-        EVTMGR_DEBUG_PRINTLN( "popEvent() interrupts on" )
-    }
 
     EVTMGR_DEBUG_PRINT( "popEvent() return " )
     EVTMGR_DEBUG_PRINT( *eventCode )
