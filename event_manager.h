@@ -1,5 +1,5 @@
 /*
- * EventManager.h
+ * event_manager.h
  *
  *
  * An event handling system

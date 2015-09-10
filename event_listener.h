@@ -1,5 +1,5 @@
 /******************************************************************************
- * @file    EventListener.h 
+ * @file    event_listener.h 
  * @author  Rémi Pincent - INRIA
  * @date    16 juin 2014   
  *
